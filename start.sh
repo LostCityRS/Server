@@ -6,8 +6,14 @@ if ! command -v git 2>&1 >/dev/null; then
 fi
 
 if ! command -v node 2>&1 >/dev/null; then
-	echo You must install Node to proceed
-	exit 1
+        echo You must install Node to proceed
+        exit 1
+fi
+
+node_major=$(node --version | sed 's/^v//' | cut -d'.' -f1)
+if [ "$node_major" -lt 22 ]; then
+        echo Node 22 or newer is required. Detected $(node --version)
+        exit 1
 fi
 
 if ! command -v bun 2>&1 >/dev/null; then

@@ -12,6 +12,12 @@ if errorlevel 1 (
     exit /b
 )
 
+for /f "tokens=2 delims=v." %%i in ('node -v') do set "node_major=%%i"
+if %node_major% lss 22 (
+    echo Node 22 or newer is required. Detected %node_major%
+    exit /b
+)
+
 where /q bun
 if errorlevel 1 (
     npm i -g bun
