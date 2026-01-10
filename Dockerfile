@@ -1,17 +1,19 @@
 FROM oven/bun:debian
 
-RUN apt update
-RUN apt install -y openjdk-17-jdk
+RUN apt update \
+  && apt install -y --no-install-recommends default-jdk git ca-certificates bash \
+  && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /opt/server
+COPY . .
+
+# Fix ownership AFTER copy (this will also fix engine/ being root-owned)
+RUN chown -R bun:bun /opt/server
 
 USER bun
 
-WORKDIR /opt/server
-COPY --chown=bun:bun . .
-
-WORKDIR /opt/server/engine
+# Install root dependencies (since root package.json exists)
 RUN bun install
-RUN bun run build
 
-WORKDIR /opt/server/engine
 EXPOSE 8888/tcp
-ENTRYPOINT [ "bun", "run", "quickstart" ]
+ENTRYPOINT ["/opt/server/start.sh"]
