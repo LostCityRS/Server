@@ -140,7 +140,7 @@ async function main() {
         updateRepo('webclient');
         updateRepo('javaclient');
     } else if (choice === 'web') {
-        if (!hasWebclient[config.rev]) {
+        if (!revInfo[config.rev]?.webclient) {
             console.log('This version does not have a webclient available (yet?), sorry.');
         } else if (process.platform === 'win32' || process.platform === 'darwin') {
             runOnOs('http://localhost/rs2.cgi');
