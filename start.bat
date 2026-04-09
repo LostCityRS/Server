@@ -33,5 +33,4 @@ if errorlevel 1 (
 @REM     exit /b
 @REM )
 
-bun install
-bun run start.ts
+bun install && bun run start.ts
