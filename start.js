@@ -92,13 +92,13 @@ async function main() {
     }
 
     if (!fs.existsSync('engine/.env') && !fs.existsSync('engine/data/config/world.json')) {
-        child_process.spawnSync('bun install', {
+        child_process.spawnSync('npm install', {
             shell: true,
             stdio: 'inherit',
             cwd: 'engine'
         });
 
-        child_process.spawnSync('bun run setup', {
+        child_process.spawnSync('npm run setup', {
             shell: true,
             stdio: 'inherit',
             cwd: 'engine'
@@ -141,7 +141,7 @@ async function main() {
     }, { clearPromptOnDone: true });
 
     if (choice === 'start') {
-        child_process.execSync('bun start', {
+        child_process.execSync('npm start', {
             stdio: 'inherit',
             cwd: 'engine'
         });
@@ -210,11 +210,10 @@ async function promptAdvanced() {
             description: 'Starts the server and watches for .ts file changes to reload',
             value: 'start-dev'
         }, {
-        // todo:
-        //     name: 'Reconfigure Server',
-        //     description: 'Edit the environment config for the server',
-        //     value: 'configure'
-        // }, {
+             name: 'Reconfigure Server',
+             description: 'Edit the environment config for the server',
+             value: 'configure'
+        }, {
             name: 'Clean-build Server',
             description: '',
             value: 'clean-build'
@@ -244,29 +243,28 @@ async function promptAdvanced() {
     }, { clearPromptOnDone: true });
 
     if (choice === 'start-dev') {
-        child_process.execSync('bun run dev', {
+        child_process.execSync('npm run dev', {
             stdio: 'inherit',
             cwd: 'engine'
         });
     } else if (choice === 'configure') {
-        // todo: has issues with input appearing right now
-        child_process.spawnSync('bun run setup', {
+        child_process.spawnSync('npm run setup', {
             shell: true,
             stdio: 'inherit',
             cwd: 'engine'
         });
     } else if (choice === 'clean-build') {
-        child_process.execSync('bun run clean', {
+        child_process.execSync('npm run clean', {
             stdio: 'inherit',
             cwd: 'engine'
         });
 
-        child_process.execSync('bun run build', {
+        child_process.execSync('npm run build', {
             stdio: 'inherit',
             cwd: 'engine'
         });
     } else if (choice === 'build-web') {
-        child_process.execSync('bun run build', {
+        child_process.execSync('npm run build', {
             stdio: 'inherit',
             cwd: 'webclient'
         });
