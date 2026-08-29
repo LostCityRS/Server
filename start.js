@@ -74,7 +74,9 @@ const revInfo = {
 
 let running = true;
 async function main() {
-    if (!fs.existsSync('server.json')) {
+    if (process.env.SERVER_REV) {
+        setRev(process.env.SERVER_REV);
+    } else if (!fs.existsSync('server.json')) {
         await promptConfig();
     }
 
@@ -83,6 +85,8 @@ async function main() {
     if (!fs.existsSync('engine')) {
         cloneRepo(engineRepo, 'engine', config.rev);
     }
+
+    linkSaveData();
 
     if (!fs.existsSync('content')) {
         cloneRepo(contentRepo, 'content', config.rev);
@@ -108,6 +112,12 @@ async function main() {
             stdio: 'inherit',
             cwd: 'engine'
         });
+    }
+
+    if (process.env.SERVER_AUTOSTART) {
+        running = false;
+        startServer();
+        return;
     }
 
     const choice = await select({
@@ -146,10 +156,7 @@ async function main() {
     }, { clearPromptOnDone: true });
 
     if (choice === 'start') {
-        child_process.execSync('npm start', {
-            stdio: 'inherit',
-            cwd: 'engine'
-        });
+        startServer();
     } else if (choice === 'update') {
         updateRepo('engine');
         updateRepo('content');
@@ -181,6 +188,59 @@ async function main() {
     } else if (choice === 'quit') {
         running = false;
     }
+}
+
+function startServer() {
+    child_process.execSync('npm start', {
+        stdio: 'inherit',
+        cwd: 'engine'
+    });
+}
+
+// lets docker compose (or anyone else) pick the version without prompting for it
+function setRev(rev) {
+    if (!revInfo[rev]) {
+        console.log(`Unknown version ${rev}, pick one of: ${Object.keys(revInfo).join(', ')}`);
+        process.exit(1);
+    }
+
+    if (fs.existsSync('server.json')) {
+        config = JSON.parse(fs.readFileSync('server.json', 'utf8'));
+
+        if (config.rev === rev) {
+            return;
+        }
+
+        cleanWorkingFolder(); // changing versions needs fresh checkouts
+    }
+
+    config.rev = rev;
+
+    fs.writeFileSync('server.json', JSON.stringify(config, null, 2));
+}
+
+// keeps accounts and characters in save/, so they outlive a version change wiping the checkouts
+function linkSaveData() {
+    fs.mkdirSync('save/players', { recursive: true });
+
+    const links = [
+        ['engine/data/players', '../../save/players'],
+        ['engine/db.sqlite', '../save/db.sqlite']
+    ];
+
+    for (const [path, target] of links) {
+        if (!fs.lstatSync(path, { throwIfNoEntry: false })) {
+            fs.symlinkSync(target, path);
+        }
+    }
+}
+
+// only removes the checkouts - anything linked into save/ is left alone
+function cleanWorkingFolder() {
+    fs.rmSync('engine', { recursive: true, force: true });
+    fs.rmSync('content', { recursive: true, force: true });
+    fs.rmSync('webclient', { recursive: true, force: true });
+    fs.rmSync('javaclient', { recursive: true, force: true });
 }
 
 async function promptConfig() {
@@ -284,10 +344,7 @@ async function promptAdvanced() {
     } else if (choice === 'change-version') {
         await promptConfig();
 
-        fs.rmSync('engine', { recursive: true, force: true });
-        fs.rmSync('content', { recursive: true, force: true });
-        fs.rmSync('webclient', { recursive: true, force: true });
-        fs.rmSync('javaclient', { recursive: true, force: true });
+        cleanWorkingFolder();
     }
 }
 

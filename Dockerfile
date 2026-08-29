@@ -7,11 +7,14 @@ RUN apt update \
 WORKDIR /opt/server
 COPY . .
 
-RUN chown -R node:node /opt/server
+# the subprojects are cloned into game/ at runtime and game/save holds the data worth keeping -
+# it is mounted as a volume, and has to exist here so it isn't created owned by root
+RUN mkdir -p game && chown -R node:node /opt/server
 
 USER node
 
 RUN npm install
 
 EXPOSE 8888/tcp
-ENTRYPOINT ["/opt/server/start.sh"]
+WORKDIR /opt/server/game
+ENTRYPOINT ["node", "/opt/server/start.js"]

@@ -1,0 +1,18 @@
+services:
+  server:
+    build: .
+    environment:
+      # which version to run - see revInfo in start.js for the full list.
+      # changing this re-clones the checkouts, save/ in the volume below is left alone.
+      SERVER_REV: '274'
+      # run the server straight away instead of showing the menu, so it can run unattended.
+      # for the menu (update, rebuild, reconfigure): docker compose run --rm -e SERVER_AUTOSTART= server
+      SERVER_AUTOSTART: '1'
+    ports:
+      - '80:8888' # web client and its game traffic - the engine defaults to 8888 on linux
+      - '43594:43594' # game, for the java client
+      - '8898:8898' # setup page, and the management page once the world is up
+    volumes:
+      # the checkouts, everything the server builds from them, and save/
+      - /srv/lostcity/game:/opt/server/game
+    restart: unless-stopped

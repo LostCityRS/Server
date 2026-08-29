@@ -1,2 +1,8 @@
 .git/
 node_modules/
+
+engine/
+content/
+webclient/
+javaclient/
+server.json
