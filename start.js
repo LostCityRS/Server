@@ -219,24 +219,56 @@ function setRev(rev) {
     fs.writeFileSync('server.json', JSON.stringify(config, null, 2));
 }
 
-// keeps accounts and characters in save/, so they outlive a version change wiping the checkouts
+const saveLinks = [
+    ['engine/data/players', '../../save/players', 'save/players'],
+    ['engine/db.sqlite', '../save/db.sqlite', 'save/db.sqlite']
+];
+
+// keeps accounts and characters in save/, so they outlive a version change wiping the checkouts.
+// anything the engine already wrote into the checkout itself is moved out first - installs from
+// before save/ existed have real files there, and cleanWorkingFolder would take them along
 function linkSaveData() {
+    if (!fs.existsSync('engine')) {
+        return;
+    }
+
     fs.mkdirSync('save/players', { recursive: true });
 
-    const links = [
-        ['engine/data/players', '../../save/players'],
-        ['engine/db.sqlite', '../save/db.sqlite']
-    ];
+    for (const [path, target, saved] of saveLinks) {
+        const stat = fs.lstatSync(path, { throwIfNoEntry: false });
 
-    for (const [path, target] of links) {
-        if (!fs.lstatSync(path, { throwIfNoEntry: false })) {
-            fs.symlinkSync(target, path);
+        if (stat && stat.isSymbolicLink()) {
+            continue; // already linked by an earlier run
         }
+
+        if (stat) {
+            moveIntoSave(path, saved, stat);
+        }
+
+        fs.symlinkSync(target, path);
     }
 }
 
-// only removes the checkouts - anything linked into save/ is left alone
+// save/ is the copy we keep, so a name that is already there wins and the checkout's
+// version is set aside as .old rather than thrown away
+function moveIntoSave(path, saved, stat) {
+    if (!stat.isDirectory()) {
+        fs.renameSync(path, fs.existsSync(saved) ? `${saved}.old` : saved);
+        return;
+    }
+
+    for (const entry of fs.readdirSync(path)) {
+        const dest = `${saved}/${entry}`;
+        fs.renameSync(`${path}/${entry}`, fs.existsSync(dest) ? `${dest}.old` : dest);
+    }
+
+    fs.rmSync(path, { recursive: true, force: true });
+}
+
+// only removes the checkouts - the save data is moved into save/ first and survives as a link
 function cleanWorkingFolder() {
+    linkSaveData();
+
     fs.rmSync('engine', { recursive: true, force: true });
     fs.rmSync('content', { recursive: true, force: true });
     fs.rmSync('webclient', { recursive: true, force: true });
